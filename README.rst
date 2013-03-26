@@ -42,8 +42,8 @@ in ``testecho`` may help in both cases.
 .. _Tulip: http://code.google.com/p/tulip/
 .. _Django 1.5: https://www.djangoproject.com/download/
 
-Behind the hood
----------------
+Under the hood
+--------------
 
 Here are the underlying components in no particular order, with some hints on
 their quality and reusability.
