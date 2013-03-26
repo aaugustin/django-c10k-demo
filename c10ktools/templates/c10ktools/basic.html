@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Basic GET and POST tests</title>
+    </head>
+    <body>
+        <h1>Basic tests</h1>
+        <h2>Forms</h2>
+        <h3>GET</h3>
+        <form method="GET">
+            <input type="text" name="text">
+            <input type="submit">
+        </form>
+        <h3>POST</h3>
+        <form method="POST">
+            <input type="text" name="text">
+            <input type="submit">
+        </form>
+        <h2>{{ request.method }} results</h2>
+        <h3>GET</h3>
+        <pre>{{ request.GET }}</pre>
+        <h3>POST</h3>
+        <pre>{{ request.POST }}</pre>
+    </body>
+</html>
