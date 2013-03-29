@@ -7,7 +7,7 @@ import urllib.parse
 import tulip
 import tulip.http
 
-from c10ktools.websockets import ClientWebSocket
+from c10ktools.websockets import WebSocket
 
 
 @tulip.coroutine
@@ -44,7 +44,7 @@ def connect_websocket(url):
     assert 'Sec-WebSocket-Extensions' not in headers
     assert 'Sec-WebSocket-Protocol' not in headers
 
-    return ClientWebSocket(client.stream, client.transport)
+    return WebSocket(client.stream, client.transport, is_client=True)
 
 
 class WebSocketClientProtocol(tulip.http.HttpClientProtocol):

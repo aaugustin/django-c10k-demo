@@ -51,61 +51,18 @@ their quality and reusability.
 WebSocket implementation
 ........................
 
-django-c10k-demo provides a server-side implementation of the WebSocket
-protocol compatible with Tulip.
+django-c10k-demo provides a generic implementation of the WebSocket protocol.
 
 The ``WebSocket`` class provides three methods:
 
-- ``read_message()`` is a coroutine that returns the content of the next
-  message asynchronously;
-- ``write_message(data, opcode=None)`` writes the next message — Tulip ensures
-  this doesn't block;
+- ``recv()`` is a coroutine that returns the content of the next message;
+- ``send(data)`` writes the next message;
 - ``close()`` closes the connection.
 
+When the connection is closed, ``yield from recv()`` returns ``None``, and
+``send(data)`` raises an ``IOError``.
+
 The code is in ``c10ktools.websockets``.
-
-WSGI server running on top of Tulip
-...................................
-
-django-c10k-demo adapts Django's built-in developement server to run on top of
-Tulip. This involves some inelegant plumbing to resolve the impedance mismatch
-between WSGI and ``tulip.http``.
-
-The code is merely functional. There's little point in optimizing it: either
-the standard library will eventually provide an asynchronous WSGI server, or
-the future of asynchronous apps won't involve WSGI.
-
-This component can be used independently by adding the ``'c10ktools'``
-application to ``INSTALLED_APPS``. This overrides the ``django-admin.py
-runserver`` command to run on Tulip. Auto-reload works.
-
-The implementation is in ``c10ktools.servers.tulip``. A test page is available
-at http://localhost:8000/test/wsgi/.
-
-Hook for the upgrade to WebSocket
-.................................
-
-The design of WSGI predates real-time on the web and PEP 3156 doesn't propose
-to update it. Hopefully his point will be addressed by a future version of the
-standard (PEP 3356 anyone?). In the meantime our only choice is to bastardize
-it, steering away from WSGI compliance — `sorry Graham`_.
-
-The WebSocket handler needs to grab the read and write streams for further
-communications. A straightforward solution is to add them in ``environ``,
-`like httpclient does`_.
-
-More importantly, it needs to hook on the WSGI request processing. Since it's
-a coroutine, it can only be called from another coroutine. I chose to call it
-in ``close()`` to allow completing the handshake cleanly within WSGI. (Still,
-the handshake isn't compliant because the reply contains a hop-by-hop header.)
-
-These features are also implemented in ``c10ktools.servers.tulip``.
-
-Once again, there's little point in optimizing them until the future of WSGI
-and asynchronous servers is clarified.
-
-.. _sorry Graham: https://twitter.com/GrahamDumpleton/status/316315348049752064
-.. _like httpclient does: https://github.com/fafhrd91/httpclient/blob/master/httpclient/server.py
 
 WebSocket API for Django
 ........................
@@ -118,7 +75,7 @@ Here's an example of a WebSocket handler in Django::
     def handler(ws):
         # ws is a WebSocket instance. Let's echo the messages we receive.
         while True:
-            ws.write_message((yield from ws.read_message()))
+            ws.send((yield from ws.recv()))
 
 WebSocket handlers are hooked in the URLconf like regular HTTP views.
 Arguments can be captured in the URLconf and passed to the handlers.
@@ -127,16 +84,58 @@ This doesn't allow sharing an URL between a regular HTTP view and a WebSocket
 handler, but I'm happy with this limitation as it's probably a good practice
 to keep them separate anyway.
 
-Inside a WebSocket handler, you can use ``yield from ws.read_message()`` and
-``ws.write_message()`` freely. You can also call ``ws.write_message()`` from
+Inside a WebSocket handler, you can use ``yield from ws.recv()`` and
+``ws.send()`` freely. You can also call ``ws.send()`` from
 outside the handler.
 
-The ``@websocket`` decorator takes care of marking the handler as a
-``@tulip.coroutine``. ``ws.close()`` is called automatically when the handler
-returns.
+The ``@websocket`` decorator should only be applied to coroutines. It takes care of closing the WebSocket when the handler terminates.
 
 The implementation is in ``c10ktools.http.websockets``. A test page is
 available at http://localhost:8000/test/.
+
+Hook for the upgrade to WebSocket
+.................................
+
+The API described above requires the upgrade from HTTP to WebSocket to happen
+after Django's URL dispatcher has routed the request to a view. As a
+consequence, the upgrade must be performed within the framework of WSGI.
+
+PEP 3333 predates real-time on the web and PEP 3156 doesn't propose to update
+it. Hopefully his point will be addressed by a future version of the standard
+(PEP 3356 anyone?). In the meantime our only choice is to bastardize WSGI,
+steering away from compliance — `sorry Graham`_.
+
+The WebSocket opening handshake is completed by sending a HTTP response. This
+can be done with WSGI, but it isn't compliant because the response includes
+hop-by-hop headers, ``Upgrade`` and ``Connection``.
+
+The switch to the WebSocket protocol is performed in ``close()``. In Tulip
+terms, the transport is disconnected for the HTTP protocol and reconnected to
+the WebSocket protocol. Then a task is started to run the WebSocket handler
+and close the connection when it terminates. This design is very debatable:
+
+- This isn't an intended use case for the ``close()`` method.
+- The protocol transplant relies on non-standard variables in ``environ``.
+- It also abuses private APIs of Tulip.
+
+These features are implemented in ``c10ktools.http.websockets``.
+
+.. _sorry: https://twitter.com/GrahamDumpleton/status/316315348049752064
+.. _Graham: https://twitter.com/GrahamDumpleton/status/316726248837611521
+.. _like httpclient does: https://github.com/fafhrd91/httpclient/blob/master/httpclient/server.py
+
+Asynchronous development server
+...............................
+
+django-c10k-demo adapts Django's built-in developement server to run on top of
+Tulip, taking advantage of Tulip's built-in WSGI support.
+
+This component can be used independently by adding the ``'c10ktools'``
+application to ``INSTALLED_APPS``. This overrides the ``django-admin.py
+runserver`` command to run on Tulip. Auto-reload works.
+
+The implementation is in ``c10ktools.management.commands.runserver``. A test
+page is available at http://localhost:8000/test/wsgi/.
 
 Testing script
 ..............

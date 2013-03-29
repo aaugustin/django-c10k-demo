@@ -13,8 +13,8 @@ def echo(request):
 
 @websocket
 def echo_ws(ws):
-    ws.write_message('Hello!')
+    ws.send('Hello!')
     for i in range(3):
-        message = yield from ws.read_message()
-        ws.write_message('{}. {}'.format(i + 1, message))
-    ws.write_message('Goodbye!')
+        message = yield from ws.recv()
+        ws.send('{}. {}'.format(i + 1, message))
+    ws.send('Goodbye!')

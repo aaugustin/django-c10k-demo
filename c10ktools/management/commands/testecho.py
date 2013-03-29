@@ -35,17 +35,17 @@ class Command(NoArgsCommand):
             print()
 
         messages = []
-        messages.append((yield from ws.read_message()))
+        messages.append((yield from ws.recv()))
         yield from tulip.sleep(self.DELAY)
-        ws.write_message('Spam?')
-        messages.append((yield from ws.read_message()))
+        ws.send('Spam?')
+        messages.append((yield from ws.recv()))
         yield from tulip.sleep(self.DELAY)
-        ws.write_message('Eggs!')
-        messages.append((yield from ws.read_message()))
+        ws.send('Eggs!')
+        messages.append((yield from ws.recv()))
         yield from tulip.sleep(self.DELAY)
-        ws.write_message('Python.')
-        messages.append((yield from ws.read_message()))
-        messages.append((yield from ws.read_message()))
+        ws.send('Python.')
+        messages.append((yield from ws.recv()))
+        messages.append((yield from ws.recv()))
         assert messages == [
             "Hello!",
             "1. Spam?",
@@ -54,7 +54,7 @@ class Command(NoArgsCommand):
             "Goodbye!",
         ]
 
-        ws.close()
+        yieldws.close()
 
         self.count -= 1
         if self.count % (self.CLIENTS * 3 // self.DELAY) == 0:
