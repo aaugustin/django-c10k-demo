@@ -16,7 +16,8 @@ Running the demo
 ----------------
 
 * Install `Python 3.3`_, the `Tulip`_ library, and `Django 1.5`_.
-* Clone this repository.
+* Clone the `websockets`_ repository and add it to your ``PYTHONPATH``.
+* Clone `this repository`.
 * Configure your OS to allow lots of file descriptors. On OS X: ``sudo sysctl
   -w kern.maxfiles=40960 kern.maxfilesperproc=20480``
 * Open two shells and bump their file descriptor limit: ``ulimit -n 10240``
@@ -41,28 +42,14 @@ in ``testecho`` may help in both cases.
 .. _Python 3.3: http://www.python.org/getit/
 .. _Tulip: http://code.google.com/p/tulip/
 .. _Django 1.5: https://www.djangoproject.com/download/
+.. _websockets: https://github.com/aaugustin/websockets
+.. _this repository: https://github.com/aaugustin/django-c10k-demo
 
 Under the hood
 --------------
 
 Here are the underlying components in no particular order, with some hints on
 their quality and reusability.
-
-WebSocket implementation
-........................
-
-django-c10k-demo provides a generic implementation of the WebSocket protocol.
-
-The ``WebSocket`` class provides three methods:
-
-- ``recv()`` is a coroutine that returns the content of the next message;
-- ``send(data)`` writes the next message;
-- ``close()`` closes the connection.
-
-When the connection is closed, ``yield from recv()`` returns ``None``, and
-``send(data)`` raises an ``IOError``.
-
-The code is in ``c10ktools.websockets``.
 
 WebSocket API for Django
 ........................
@@ -85,13 +72,11 @@ handler, but I'm happy with this limitation as it's probably a good practice
 to keep them separate anyway.
 
 Inside a WebSocket handler, you can use ``yield from ws.recv()`` and
-``ws.send()`` freely. You can also call ``ws.send()`` from
-outside the handler.
+``ws.send()`` freely. You can also call ``ws.send()`` from outside the
+handler.
 
-The ``@websocket`` decorator should only be applied to coroutines. It takes care of closing the WebSocket when the handler terminates.
-
-The implementation is in ``c10ktools.http.websockets``. A test page is
-available at http://localhost:8000/test/.
+The ``@websocket`` decorator should only be applied to coroutines. It takes
+care of closing the WebSocket when the handler terminates.
 
 Hook for the upgrade to WebSocket
 .................................
@@ -103,10 +88,10 @@ consequence, the upgrade must be performed within the framework of WSGI.
 PEP 3333 predates real-time on the web and PEP 3156 doesn't propose to update
 it. Hopefully his point will be addressed by a future version of the standard
 (PEP 3356 anyone?). In the meantime our only choice is to bastardize WSGI,
-steering away from compliance — `sorry Graham`_.
+steering away from compliance — `sorry`_ `Graham`_.
 
 The WebSocket opening handshake is completed by sending a HTTP response. This
-can be done with WSGI, but it isn't compliant because the response includes
+is achieved with WSGI, but it isn't compliant because the response includes
 hop-by-hop headers, ``Upgrade`` and ``Connection``.
 
 The switch to the WebSocket protocol is performed in ``close()``. In Tulip
@@ -118,11 +103,8 @@ and close the connection when it terminates. This design is very debatable:
 - The protocol transplant relies on non-standard variables in ``environ``.
 - It also abuses private APIs of Tulip.
 
-These features are implemented in ``c10ktools.http.websockets``.
-
 .. _sorry: https://twitter.com/GrahamDumpleton/status/316315348049752064
 .. _Graham: https://twitter.com/GrahamDumpleton/status/316726248837611521
-.. _like httpclient does: https://github.com/fafhrd91/httpclient/blob/master/httpclient/server.py
 
 Asynchronous development server
 ...............................
@@ -133,12 +115,3 @@ Tulip, taking advantage of Tulip's built-in WSGI support.
 This component can be used independently by adding the ``'c10ktools'``
 application to ``INSTALLED_APPS``. This overrides the ``django-admin.py
 runserver`` command to run on Tulip. Auto-reload works.
-
-The implementation is in ``c10ktools.management.commands.runserver``. A test
-page is available at http://localhost:8000/test/wsgi/.
-
-Testing script
-..............
-
-There isn't much to say about this code. It's located in
-``c10ktools.clients.tulip`` and ``c10ktools.management.commands.testecho``.

@@ -1,12 +1,9 @@
-import base64
 import functools
-import hashlib
 
 import tulip
+import websockets
 
 from django.http import HttpResponse, HttpResponseServerError
-
-from c10ktools.websockets import WebSocketProtocol
 
 
 def websocket(handler):
@@ -35,7 +32,7 @@ def websocket(handler):
             yield from ws.close()
 
         def switch_protocols():
-            ws_proto = WebSocketProtocol()
+            ws_proto = websockets.WebSocketFramingProtocol()
             # Disconnect transport from http_proto and connect it to ws_proto
             http_proto.transport = DummyTransport()
             transport._protocol = ws_proto
@@ -55,40 +52,23 @@ class WebSocketResponse(HttpResponse):
 
     def __init__(self, environ, switch_protocols):
         super().__init__()
-        try:
-            key = self.check_request(environ)
-        except Exception:
+
+        http_1_1 = environ['SERVER_PROTOCOL'] == 'HTTP/1.1'
+        get_header = lambda k: environ['HTTP_' + k.upper().replace('-', '_')]
+        key = websockets.check_request(get_header)
+
+        if not http_1_1 or key is None:
             self.status_code = 400
             self.content = "Invalid WebSocket handshake.\n"
         else:
-            self.create_headers(key)
+            self._headers = {}                  # Reset headers (private API!)
+            set_header = self.__setitem__
+            websockets.build_response(set_header, key)
             self.close = switch_protocols
-
-    def check_request(self, environ):
-        # Host and Origin checking isn't handled at this level.
-        # RFC 6455 - 4.2.1. Reading the Client's Opening Handshake
-        assert environ['SERVER_PROTOCOL'] == 'HTTP/1.1'
-        assert environ['HTTP_HOST']     # the server's authority isn't known
-        assert environ['HTTP_UPGRADE'].lower() == 'websocket'
-        assert any(token.strip() == 'upgrade'
-                for token in environ['HTTP_CONNECTION'].lower().split(','))
-        assert len(base64.b64decode(environ['HTTP_SEC_WEBSOCKET_KEY'])) == 16
-        assert environ['HTTP_SEC_WEBSOCKET_VERSION'] == '13'
-        return environ['HTTP_SEC_WEBSOCKET_KEY']
-
-    def create_headers(self, key):
-        # Reset headers (private API!)
-        self._headers = {}
-        # RFC 6455 - 4.2.2. Sending the Server's Opening Handshake
-        guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-        sha1 = hashlib.sha1((key + guid).encode()).digest()
-        self['Upgrade'] = 'WebSocket'
-        self['Connection'] = 'Upgrade'
-        self['Sec-WebSocket-Accept'] = base64.b64encode(sha1)
 
 
 class DummyTransport(tulip.Transport):
-    """Transport that doesn't do anything."""
+    """Transport that doesn't do anything, but can be closed silently."""
 
     def can_write_eof(self):
         return False

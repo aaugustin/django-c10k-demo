@@ -1,10 +1,9 @@
 import random
 
 import tulip
+import websockets
 
 from django.core.management.base import NoArgsCommand
-
-from c10ktools.clients.tulip import connect_websocket
 
 
 class Command(NoArgsCommand):
@@ -24,7 +23,7 @@ class Command(NoArgsCommand):
 
         # Distribute the connections a bit
         yield from tulip.sleep(2 * self.DELAY * random.random())
-        ws = yield from connect_websocket(self.ECHO_URL)
+        ws = yield from websockets.connect(self.ECHO_URL)
 
         self.count += 1
         if self.count % (self.CLIENTS * 3 // self.DELAY) == 0:
@@ -54,7 +53,7 @@ class Command(NoArgsCommand):
             "Goodbye!",
         ]
 
-        yieldws.close()
+        yield from ws.close()
 
         self.count -= 1
         if self.count % (self.CLIENTS * 3 // self.DELAY) == 0:
