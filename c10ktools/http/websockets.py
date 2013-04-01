@@ -32,7 +32,7 @@ def websocket(handler):
             yield from ws.close()
 
         def switch_protocols():
-            ws_proto = websockets.WebSocketFramingProtocol()
+            ws_proto = websockets.WebSocketProtocol()
             # Disconnect transport from http_proto and connect it to ws_proto
             http_proto.transport = DummyTransport()
             transport._protocol = ws_proto
