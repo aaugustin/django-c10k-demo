@@ -1,0 +1,22 @@
+<!DOCTYPE html>{% load static %}
+<html>
+    <head>
+        <title>Game of Life ({{ size }}x{{ size }})</title>
+        <link rel="icon" href="{% static 'gameoflife/hacker.png' %}" sizes="32x32" type="image/png">
+        <link rel="stylesheet" href="{% static 'gameoflife/watch.css' %}" type="text/css">
+    </head>
+    <body>
+        {% spaceless %}
+        <table>
+            {% for row in sizelist %}
+            <tr>
+                {% for col in sizelist %}
+                <td id="{{ row }}-{{ col }}"></td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+        {% endspaceless %}
+        <script src="{% static 'gameoflife/watch.js' %}"></script>
+    </body>
+</html>
