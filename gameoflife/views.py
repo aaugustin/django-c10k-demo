@@ -6,35 +6,20 @@ from django.shortcuts import render
 
 from c10ktools.http import websocket
 
-from .models import SIZE
-
-
-# Non-resettable server-wide state
-expected = SIZE * SIZE
+# Server-wide state used by the watchers
 global_subscribers = set()
-
-# Resettable server-wide state
-def reset():
-    global connected, subscribed, sub_latch, run_latch, subscribers
-    connected = 0
-    subscribed = 0
-    sub_latch = tulip.Future()
-    run_latch = tulip.Future()
-    subscribers = [[set() for col in range(SIZE)] for row in range(SIZE)]
-
-reset()
-
+size = 32
 
 def watch(request):
     context = {
-        'size': SIZE,
-        'sizelist': list(range(SIZE)),
+        'size': size,
+        'sizelist': list(range(size)),
     }
     return render(request, 'gameoflife/watch.html', context)
 
 
 @websocket
-def watcher_ws(ws):
+def watcher(ws):
     global_subscribers.add(ws)
     # Block until the client goes away
     yield from ws.recv()
@@ -42,11 +27,21 @@ def watcher_ws(ws):
 
 
 @websocket
-def worker_ws(ws):
-    global connected, subscribed
+# Server-wide state
+def reset(ws):
+    global size, expected, connected, subscribed, sub_latch, run_latch, subscribers
+    size = int((yield from ws.recv()))
+    expected = size * size
+    connected = 0
+    subscribed = 0
+    sub_latch = tulip.Future()
+    run_latch = tulip.Future()
+    subscribers = [[set() for col in range(size)] for row in range(size)]
 
-    if subscribed > 0:
-        reset()
+
+@websocket
+def worker(ws):
+    global connected, subscribed
 
     # Wait until all clients are connected.
     connected += 1
@@ -60,11 +55,11 @@ def worker_ws(ws):
     ws.send('sub')
 
     # Subscribe to updates sent by neighbors.
-    for _ in range(8):
+    while True:
         msg = yield from ws.recv()
-        action, row, col = msg.split()
-        if action != 'sub':
-            raise Exception("Unexpected action: {}".format(action))
+        if msg == 'sub':
+            break
+        row, col = msg.split()
         subscribers[int(row)][int(col)].add(ws)
 
     # Wait until all clients are subscribed.

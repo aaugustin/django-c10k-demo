@@ -58,12 +58,21 @@ updates in real time as soon as the workers start running. Alive cells are
 dark, dead cells are light. Their hue shifts slightly at each step to show how
 the grid updates.
 
-The grid is cyclic: the left side is connected to the right side, and the top
-to the bottom. The initial state is random with one cell alive out of four on
-average.
+``gameoflife`` accepts a number of options to configure the game:
 
-If you encounter errors, you can change ``SIZE`` in ``gameoflife.models`` to
-run this demo on a smaller grid.
+* The size of the grid is 32. You can change it with ``-s``.
+* The initial state is random with one cell alive out of four on average.
+  You can load a pattern from a file with ``-p``. See ``gameoflife/patterns/``
+  for some common examples.
+* When a pattern is provided, it's centered on the grid. You can disable this
+  behavior with ``-C``.
+* The grid is cyclic: the left side is connected to the right side and the top
+  to the bottom. You can disable this behavior with ``-W``, for example to
+  test guns.
+* The workers run forever, unless you specify a number of steps with ``-n``.
+* The workers make at most one step per second — this only matters on small
+  grids since the game won't run that fast on larger grids. You can adjust the
+  speed limit with ``-l``.
 
 .. _Game of Life: http://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
 

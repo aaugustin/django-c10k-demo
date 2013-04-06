@@ -5,12 +5,21 @@ import websockets
 
 
 @tulip.coroutine
-def run(row, col, size, state=None):
+def reset(size):
+    ws = yield from websockets.connect('ws://localhost:8000/reset/')
+    ws.send(str(size))
+    yield from ws.wait_close()
+
+
+@tulip.coroutine
+def run(row, col, size, wrap, speed, steps=None, state=None):
 
     if state is None:
         state = random.choice((True, False, False, False))
 
-    neighbors = {n: i for i, n in enumerate(get_neighbors(row, col, size))}
+    neighbors = get_neighbors(row, col, size, wrap)
+    neighbors = {n: i for i, n in enumerate(neighbors)}
+    n = len(neighbors)
 
     # Throttle at 100 connections / second on average
     yield from tulip.sleep(size * size / 100 * random.random())
@@ -23,7 +32,8 @@ def run(row, col, size, state=None):
 
     # Subscribe to updates sent by neighbors.
     for neighbor in neighbors:
-        ws.send('sub {} {}'.format(*neighbor))
+        ws.send('{} {}'.format(*neighbor))
+    ws.send('sub')
 
     # Wait until all clients are subscribed.
     msg = yield from ws.recv()
@@ -39,10 +49,10 @@ def run(row, col, size, state=None):
     # send our state at step N. At this point, our neighbors can send their
     # states at steps N and N + 1, but not N + 2, since that requires our
     # state at step N + 1. We only need to keep track of two sets of states.
-    states = [[None] * 8, [None] * 8]
+    states = [[None] * n, [None] * n]
 
     # Gather state updates from neighbors and send our own state updates.
-    while True:
+    while (steps is None or step < steps):
         msg = yield from ws.recv()
         if msg is None:
             break
@@ -55,15 +65,20 @@ def run(row, col, size, state=None):
             step += 1
             alive = states[target].count(True)
             state = alive == 3 or (state and alive == 2)
-            states[target] = [None] * 8
+            states[target] = [None] * n
             ws.send('{} {} {} {}'.format(step, row, col, int(state)))
-            # Throttle at one step per second
-            yield from tulip.sleep(1)
+            # Throttle, speed is a number of steps per second
+            yield from tulip.sleep(1 / speed)
+
+    yield from ws.close()
 
 
-def get_neighbors(row, col, size):
+def get_neighbors(row, col, size, wrap):
     for i in (-1, 0, 1):
         for j in (-1, 0, 1):
             if i == j == 0:
                 continue
-            yield (row + i) % size, (col + j) % size
+            if 0 <= row + i < size and 0 <= col + j < size:
+                yield row + i, col + j
+            elif wrap:
+                yield (row + i) % size, (col + j) % size
