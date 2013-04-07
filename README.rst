@@ -168,3 +168,16 @@ Tulip, taking advantage of Tulip's built-in WSGI support.
 This component can be used independently by adding the ``'c10ktools'``
 application to ``INSTALLED_APPS``. This overrides the ``django-admin.py
 runserver`` command to run on Tulip. Auto-reload works.
+
+Asynchronous production server
+..............................
+
+django-c10k-demo works with `gtulip`_::
+
+  $ pip install -e git+https://github.com/fafhrd91/gtulip#egg=gtulip
+  $ pip install -e git+https://github.com/fafhrd91/httpclient#egg=httpclient
+  $ gunicorn -k gtulip.TulipWorker c10kdemo.wsgi
+
+Of course, this stack is still in an alpha state; use it at your own risk!
+
+.. _gtulip: https://github.com/fafhrd91/gtulip
