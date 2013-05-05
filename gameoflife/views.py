@@ -20,10 +20,12 @@ def watch(request):
 
 @websocket
 def watcher(ws):
+    print("Watcher connected")
     global_subscribers.add(ws)
     # Block until the client goes away
     yield from ws.recv()
     global_subscribers.remove(ws)
+    print("Watcher disconnected")
 
 
 @websocket
@@ -55,12 +57,15 @@ def worker(ws):
     ws.send('sub')
 
     # Subscribe to updates sent by neighbors.
+    subscriptions = set()
     while True:
         msg = yield from ws.recv()
         if msg == 'sub':
             break
         row, col = msg.split()
-        subscribers[int(row)][int(col)].add(ws)
+        row, col = int(row), int(col)
+        subscriptions.add((row, col))
+        subscribers[row][col].add(ws)
 
     # Wait until all clients are subscribed.
     subscribed += 1
@@ -82,3 +87,7 @@ def worker(ws):
         for subscriber in itertools.chain(
                 subscribers[int(row)][int(col)], global_subscribers):
             subscriber.send(msg)
+
+    # Unsubscribe from updates.
+    for row, col in subscriptions:
+        subscribers[row][col].remove(ws)
