@@ -2,6 +2,7 @@ import functools
 
 import tulip
 import websockets
+from websockets import handshake
 
 from django.http import HttpResponse, HttpResponseServerError
 
@@ -16,7 +17,7 @@ def websocket(handler):
             assert environ['wsgi.async']
             stream = environ['tulip.reader']
             transport = environ['tulip.writer']
-            assert isinstance(stream, tulip.http.HttpStreamReader)
+            assert isinstance(stream, tulip.parsers.StreamBuffer)
             assert isinstance(transport, tulip.Transport)
             # All Tulip transports appear to have a _protocol attribute...
             http_proto = transport._protocol
@@ -32,7 +33,7 @@ def websocket(handler):
             yield from ws.close()
 
         def switch_protocols():
-            ws_proto = websockets.WebSocketProtocol()
+            ws_proto = websockets.WebSocketCommonProtocol()
             # Disconnect transport from http_proto and connect it to ws_proto
             http_proto.transport = DummyTransport()
             transport._protocol = ws_proto
@@ -55,7 +56,7 @@ class WebSocketResponse(HttpResponse):
 
         http_1_1 = environ['SERVER_PROTOCOL'] == 'HTTP/1.1'
         get_header = lambda k: environ['HTTP_' + k.upper().replace('-', '_')]
-        key = websockets.check_request(get_header)
+        key = handshake.check_request(get_header)
 
         if not http_1_1 or key is None:
             self.status_code = 400
@@ -63,7 +64,7 @@ class WebSocketResponse(HttpResponse):
         else:
             self._headers = {}                  # Reset headers (private API!)
             set_header = self.__setitem__
-            websockets.build_response(set_header, key)
+            handshake.build_response(set_header, key)
             self.close = switch_protocols
 
 
