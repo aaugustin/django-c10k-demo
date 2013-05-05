@@ -58,6 +58,10 @@ updates in real time as soon as the workers start running. Alive cells are
 dark, dead cells are light. Their hue shifts slightly at each step to show how
 the grid updates.
 
+.. image:: https://raw.github.com/aaugustin/django-c10k-demo/master/gameoflife/screenshot.png
+   :width: 917
+   :height: 938
+
 ``gameoflife`` accepts a number of options to configure the game:
 
 * The size of the grid is 32. You can change it with ``-s``.
