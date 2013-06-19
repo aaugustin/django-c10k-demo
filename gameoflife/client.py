@@ -8,7 +8,7 @@ import websockets
 def reset(size):
     ws = yield from websockets.connect('ws://localhost:8000/reset/')
     ws.send(str(size))
-    yield from ws.wait_close()
+    yield from ws.close_waiter
 
 
 @tulip.coroutine
