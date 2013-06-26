@@ -2,11 +2,13 @@ import threading
 
 import tulip
 
+from selenium.webdriver import Firefox
+
 from django.contrib.staticfiles.handlers import StaticFilesHandler
 from django.core.servers.basehttp import get_internal_wsgi_application
 from django.test import TestCase
 
-from c10ktools.management.commands.runserver import run
+from .management.commands.runserver import run
 
 
 # Since it's hard to subclass LiveServerTestCase to run on top of Tulip, and
@@ -48,3 +50,15 @@ class ServerTestCase(TestCase):
         cls.server_thread_loop.call_soon_threadsafe(cls.server_stop.set_result, None)
         cls.server_thread.join()
 
+
+class SeleniumTestCase(ServerTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(SeleniumTestCase, cls).setUpClass()
+        cls.selenium = Firefox()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.selenium.quit()
+        super(SeleniumTestCase, cls).tearDownClass()

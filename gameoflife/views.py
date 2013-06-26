@@ -2,6 +2,7 @@ import itertools
 
 import tulip
 
+from django.conf import settings
 from django.shortcuts import render
 
 from c10ktools.http import websocket
@@ -20,12 +21,12 @@ def watch(request):
 
 @websocket
 def watcher(ws):
-    print("Watcher connected")
+    debug("Watcher connected")
     global_subscribers.add(ws)
     # Block until the client goes away
     yield from ws.recv()
     global_subscribers.remove(ws)
-    print("Watcher disconnected")
+    debug("Watcher disconnected")
 
 
 @websocket
@@ -48,11 +49,11 @@ def worker(ws):
     # Wait until all clients are connected.
     connected += 1
     if connected == expected:
-        print("{:5} workers connected".format(connected))
-        print("Telling workers to subscribe")
+        debug("{:5} workers connected".format(connected))
+        debug("Telling workers to subscribe")
         sub_latch.set_result(None)
     elif connected % 100 == 0:
-        print("{:5} workers connected".format(connected))
+        debug("{:5} workers connected".format(connected))
     yield from sub_latch
     ws.send('sub')
 
@@ -70,11 +71,11 @@ def worker(ws):
     # Wait until all clients are subscribed.
     subscribed += 1
     if subscribed == expected:
-        print("{:5} workers subscribed".format(subscribed))
-        print("Telling workers to run")
+        debug("{:5} workers subscribed".format(subscribed))
+        debug("Telling workers to run")
         run_latch.set_result(None)
     elif subscribed % 100 == 0:
-        print("{:5} workers subscribed".format(subscribed))
+        debug("{:5} workers subscribed".format(subscribed))
     yield from run_latch
     ws.send('run')
 
@@ -92,3 +93,8 @@ def worker(ws):
     # Unsubscribe from updates.
     for row, col in subscriptions:
         subscribers[row][col].remove(ws)
+
+
+def debug(message):
+    if settings.DEBUG:
+        print(message)

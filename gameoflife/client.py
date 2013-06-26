@@ -3,10 +3,11 @@ import random
 import tulip
 import websockets
 
+BASE_URL = 'ws://localhost:8000'
 
 @tulip.coroutine
 def reset(size):
-    ws = yield from websockets.connect('ws://localhost:8000/reset/')
+    ws = yield from websockets.connect(BASE_URL + '/reset/')
     ws.send(str(size))
     yield from ws.close_waiter
 
@@ -23,7 +24,7 @@ def run(row, col, size, wrap, speed, steps=None, state=None):
 
     # Throttle at 100 connections / second on average
     yield from tulip.sleep(size * size / 100 * random.random())
-    ws = yield from websockets.connect('ws://localhost:8000/worker/')
+    ws = yield from websockets.connect(BASE_URL + '/worker/')
 
     # Wait until all clients are connected.
     msg = yield from ws.recv()
