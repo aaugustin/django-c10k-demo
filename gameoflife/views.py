@@ -86,7 +86,8 @@ def worker(ws):
         step, row, col, state = msg.split()
         for subscriber in itertools.chain(
                 subscribers[int(row)][int(col)], global_subscribers):
-            subscriber.send(msg)
+            if subscriber.open:
+                subscriber.send(msg)
 
     # Unsubscribe from updates.
     for row, col in subscriptions:
