@@ -16,11 +16,13 @@ def run(addr, port, wsgi_handler, stop=None, **options):
     # to make asynchronous. Pre-loading the payload is the simplest option.
     protocol_factory = lambda: tulip.http.WSGIServerHttpProtocol(
             wsgi_handler, readpayload=True)
-    loop.start_serving(protocol_factory, addr, port)
+    sockets = loop.start_serving(protocol_factory, addr, port)
     if stop is None:
         loop.run_forever()
     else:
         loop.run_until_complete(stop)
+        for socket in sockets:
+            loop.stop_serving(socket)
 
 
 # Monkey-patch runserver to run on top of Tulip.

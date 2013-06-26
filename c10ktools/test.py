@@ -6,8 +6,6 @@ from django.contrib.staticfiles.handlers import StaticFilesHandler
 from django.core.servers.basehttp import get_internal_wsgi_application
 from django.test import TestCase
 
-from selenium.webdriver import Firefox
-
 from c10ktools.management.commands.runserver import run
 
 
@@ -21,11 +19,9 @@ class ServerTestCase(TestCase):
     def setUpClass(cls):
         super(ServerTestCase, cls).setUpClass()
         cls.start_server('localhost', 8999)
-        cls.selenium = Firefox()
 
     @classmethod
     def tearDownClass(cls):
-        cls.selenium.quit()
         cls.stop_server()
         super(ServerTestCase, cls).tearDownClass()
 
@@ -45,6 +41,7 @@ class ServerTestCase(TestCase):
         tulip.set_event_loop(cls.server_thread_loop)
         cls.server_stop = tulip.Future()
         run(host, port, handler, cls.server_stop)
+        cls.server_thread_loop.close()
 
     @classmethod
     def stop_server(cls):

@@ -1,9 +1,21 @@
 from django.core.urlresolvers import reverse
 
+from selenium.webdriver import Firefox
+
 from .test import ServerTestCase
 
 
-class LiveViewsTests(ServerTestCase):
+class ViewsTests(ServerTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(ViewsTests, cls).setUpClass()
+        cls.selenium = Firefox()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.selenium.quit()
+        super(ViewsTests, cls).tearDownClass()
 
     def test_basic(self):
         self.selenium.get(self.live_server_url + reverse('c10ktools.views.basic'))

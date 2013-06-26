@@ -27,11 +27,9 @@ class Command(NoArgsCommand):
 
         self.count += 1
         if self.count % (self.CLIENTS * 3 // self.DELAY) == 0:
-            print("> {:5} connections".format(self.count))
+            self.stdout.write("> {:5} connections\n".format(self.count))
         if self.count == self.CLIENTS:
-            print()
-            print("{} clients are connected!".format(self.count))
-            print()
+            self.stdout.write("\n{} clients are connected!\n\n".format(self.count))
 
         messages = []
         messages.append((yield from ws.recv()))
@@ -57,4 +55,4 @@ class Command(NoArgsCommand):
 
         self.count -= 1
         if self.count % (self.CLIENTS * 3 // self.DELAY) == 0:
-            print("< {:5} connections".format(self.count))
+            self.stdout.write("< {:5} connections\n".format(self.count))
