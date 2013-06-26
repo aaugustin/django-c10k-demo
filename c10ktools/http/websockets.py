@@ -24,7 +24,7 @@ def websocket(handler):
             # ... I still feel guilty about this.
             assert http_proto.stream is stream
             assert http_proto.transport is transport
-        except (AssertionError, KeyError) as e:
+        except (AssertionError, KeyError) as e:             # pragma: no cover
             return HttpResponseServerError("Unsupported WSGI server: %s." % e)
 
         @tulip.coroutine

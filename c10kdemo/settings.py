@@ -2,6 +2,13 @@
 
 import os
 
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
+    },
+}
+
 DEBUG = True
 
 INSTALLED_APPS = (

@@ -2,7 +2,7 @@ import tulip
 import tulip.http
 
 
-def run(addr, port, wsgi_handler, **options):
+def run(addr, port, wsgi_handler, stop=None, **options):
     """
     Alternate version of django.core.servers.basehttp.run running on Tulip.
     """
@@ -17,7 +17,10 @@ def run(addr, port, wsgi_handler, **options):
     protocol_factory = lambda: tulip.http.WSGIServerHttpProtocol(
             wsgi_handler, readpayload=True)
     loop.start_serving(protocol_factory, addr, port)
-    loop.run_forever()
+    if stop is None:
+        loop.run_forever()
+    else:
+        loop.run_until_complete(stop)
 
 
 # Monkey-patch runserver to run on top of Tulip.
