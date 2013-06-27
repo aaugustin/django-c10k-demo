@@ -171,7 +171,9 @@ Tulip, taking advantage of Tulip's built-in WSGI support.
 
 This component can be used independently by adding the ``'c10ktools'``
 application to ``INSTALLED_APPS``. This overrides the ``django-admin.py
-runserver`` command to run on Tulip. Auto-reload works.
+runserver`` command to run on Tulip. Since the ``staticfiles`` contrib
+application also overrides ``runserver``,  ``'c10ktools'`` must appear after
+``'django.contrib.staticfiles'`` in ``INSTALLED_APPS``.  Auto-reload works.
 
 Asynchronous production server
 ..............................

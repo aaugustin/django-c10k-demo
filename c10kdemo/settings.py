@@ -12,6 +12,7 @@ DATABASES = {
 DEBUG = True
 
 INSTALLED_APPS = (
+    'django.contrib.staticfiles',
     'c10ktools',
     'gameoflife',
 )

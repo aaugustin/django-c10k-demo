@@ -7,5 +7,3 @@ urlpatterns = patterns('',
     url(r'', include('gameoflife.urls')),
 
 )
-
-urlpatterns += staticfiles_urlpatterns()
