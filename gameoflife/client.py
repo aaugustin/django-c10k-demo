@@ -9,7 +9,7 @@ BASE_URL = 'ws://localhost:8000'
 def reset(size):
     ws = yield from websockets.connect(BASE_URL + '/reset/')
     ws.send(str(size))
-    yield from ws.close_waiter
+    yield from ws.worker
 
 
 @tulip.coroutine
