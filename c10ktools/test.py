@@ -42,7 +42,7 @@ class ServerTestCase(TestCase):
         cls.server_thread_loop = tulip.new_event_loop()
         tulip.set_event_loop(cls.server_thread_loop)
         cls.server_stop = tulip.Future()
-        run(host, port, handler, cls.server_stop)
+        run(host, port, handler, cls.server_thread_loop, cls.server_stop)
         cls.server_thread_loop.close()
 
     @classmethod
