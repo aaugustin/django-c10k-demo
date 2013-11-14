@@ -1,6 +1,10 @@
 README
 ======
 
+**This repository no longer works since the ``tulip.http`` was removed when
+Tulip was renamed ``asyncio`` and moved to the standard library. I may fix it
+at some point, but don't hold your breath.**
+
 django-c10k-demo is an experimental playground for high concurrency in Django
 with WebSockets.
 
