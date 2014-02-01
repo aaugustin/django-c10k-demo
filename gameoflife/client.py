@@ -1,18 +1,18 @@
 import random
 
-import tulip
+import asyncio
 import websockets
 
 BASE_URL = 'ws://localhost:8000'
 
-@tulip.coroutine
+@asyncio.coroutine
 def reset(size):
     ws = yield from websockets.connect(BASE_URL + '/reset/')
     ws.send(str(size))
     yield from ws.worker
 
 
-@tulip.coroutine
+@asyncio.coroutine
 def run(row, col, size, wrap, speed, steps=None, state=None):
 
     if state is None:
@@ -23,7 +23,7 @@ def run(row, col, size, wrap, speed, steps=None, state=None):
     n = len(neighbors)
 
     # Throttle at 100 connections / second on average
-    yield from tulip.sleep(size * size / 100 * random.random())
+    yield from asyncio.sleep(size * size / 100 * random.random())
     ws = yield from websockets.connect(BASE_URL + '/worker/')
 
     # Wait until all clients are connected.
@@ -69,7 +69,7 @@ def run(row, col, size, wrap, speed, steps=None, state=None):
             states[target] = [None] * n
             ws.send('{} {} {} {}'.format(step, row, col, int(state)))
             # Throttle, speed is a number of steps per second
-            yield from tulip.sleep(1 / speed)
+            yield from asyncio.sleep(1 / speed)
 
     yield from ws.close()
 

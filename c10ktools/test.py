@@ -1,6 +1,6 @@
 import threading
 
-import tulip
+import asyncio
 
 from selenium.webdriver import Firefox
 
@@ -8,10 +8,10 @@ from django.contrib.staticfiles.handlers import StaticFilesHandler
 from django.core.servers.basehttp import get_internal_wsgi_application
 from django.test import TestCase
 
-from .management.commands.runserver import run
+from .monkey import run
 
 
-# Since it's hard to subclass LiveServerTestCase to run on top of Tulip, and
+# Since it's hard to subclass LiveServerTestCase to run on top of asyncio, and
 # since we don't need to share a database connection between the live server
 # and the tests, we use a simple ServerTestCase instead of LiveServerTestCase.
 
@@ -39,9 +39,9 @@ class ServerTestCase(TestCase):
         handler = StaticFilesHandler(get_internal_wsgi_application())
         # Save the event loop for the thread in a class variable
         # so we can unblock it when the tests are finished.
-        cls.server_thread_loop = tulip.new_event_loop()
-        tulip.set_event_loop(cls.server_thread_loop)
-        cls.server_stop = tulip.Future()
+        cls.server_thread_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(cls.server_thread_loop)
+        cls.server_stop = asyncio.Future()
         run(host, port, handler, cls.server_thread_loop, cls.server_stop)
         cls.server_thread_loop.close()
 

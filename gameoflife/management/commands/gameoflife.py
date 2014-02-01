@@ -1,6 +1,6 @@
 from optparse import make_option
 
-import tulip
+import asyncio
 
 from django.core.management.base import CommandError, NoArgsCommand
 
@@ -44,8 +44,8 @@ class Command(NoArgsCommand):
                    for row in range(size) for col in range(size)]
 
         try:
-            tulip.get_event_loop().run_until_complete(reset(size))
-            tulip.get_event_loop().run_until_complete(tulip.wait(clients))
+            asyncio.get_event_loop().run_until_complete(reset(size))
+            asyncio.get_event_loop().run_until_complete(asyncio.wait(clients))
         except KeyboardInterrupt:
             pass
 

@@ -1,10 +1,6 @@
 README
 ======
 
-**This repository no longer works since the ``tulip.http`` was removed when
-Tulip was renamed ``asyncio`` and moved to the standard library. I may fix it
-at some point, but don't hold your breath.**
-
 django-c10k-demo is an experimental playground for high concurrency in Django
 with WebSockets.
 
@@ -27,17 +23,18 @@ Prerequisites
 .............
 
 * Install `Python 3.3`_.
-* Clone the repositories for `Tulip`_, `Django`_  `websockets`_ and add them
-  to your ``PYTHONPATH``.
+* Install aiohttp_, asyncio_, Django_, and websockets_, most likely with
+  ``virtualenv`` and ``pip``.
 * Clone `this repository`_.
 * Configure your OS to allow lots of file descriptors.
   On OS X: ``sudo sysctl -w kern.maxfiles=40960 kern.maxfilesperproc=20480``
 * Open two shells and bump their file descriptor limit: ``ulimit -n 10240``
 
 .. _Python 3.3: http://www.python.org/getit/
-.. _Tulip: http://code.google.com/p/tulip/
-.. _Django: https://github.com/django/django
-.. _websockets: https://github.com/aaugustin/websockets
+.. _aiohttp: https://pypi.python.org/pypi/aiohttp
+.. _asyncio: https://pypi.python.org/pypi/asyncio
+.. _Django: https://www.djangoproject.com/download/
+.. _websockets: https://pypi.python.org/pypi/websockets
 .. _this repository: https://github.com/aaugustin/django-c10k-demo
 
 Game of Life demo
@@ -54,7 +51,7 @@ of the game; all the logic is handled by the clients!
 * In a browser, go to http://localhost:8000/
 
 ``gameoflife`` shouldn't display anything. ``runserver`` should display an
-increasing number of workers connected, and then and increasing number of
+increasing number of workers connected and then an increasing number of
 workers subscribed.
 
 The page in the browser registers to receive updates from all clients, and
@@ -137,7 +134,7 @@ Inside a WebSocket handler, you can use ``yield from ws.recv()`` and
 handler.
 
 The ``@websocket`` decorator should only be applied to coroutines. It takes
-care of closing the WebSocket when the handler terminates.
+care of closing the WebSocket connection when the handler terminates.
 
 Hook for the upgrade to WebSocket
 .................................
@@ -147,22 +144,22 @@ after Django's URL dispatcher has routed the request to a view. As a
 consequence, the upgrade must be performed within the framework of WSGI.
 
 PEP 3333 predates real-time on the web and PEP 3156 doesn't propose to update
-it. Hopefully his point will be addressed by a future version of the standard
-(PEP 3356 anyone?). In the meantime our only choice is to bastardize WSGI,
-steering away from compliance — `sorry`_ `Graham`_.
+it. This point might be addressed by a future version of the standard (PEP
+3356 anyone?) In the meantime our only choice is to bastardize WSGI, steering
+away from compliance — `sorry`_ `Graham`_.
 
 The WebSocket opening handshake is completed by sending a HTTP response. This
 is achieved with WSGI, but it isn't compliant because the response includes
 hop-by-hop headers, ``Upgrade`` and ``Connection``.
 
-The switch to the WebSocket protocol is performed in ``close()``. In Tulip
+The switch to the WebSocket protocol is performed in ``close()``. In asyncio
 terms, the transport is disconnected for the HTTP protocol and reconnected to
 the WebSocket protocol. Then a task is started to run the WebSocket handler
 and close the connection when it terminates. This design is very debatable:
 
 - This isn't an intended use case for the ``close()`` method.
 - The protocol transplant relies on non-standard variables in ``environ``.
-- It also abuses private APIs of Tulip.
+- It also abuses private APIs of asyncio.
 
 .. _sorry: https://twitter.com/GrahamDumpleton/status/316315348049752064
 .. _Graham: https://twitter.com/GrahamDumpleton/status/316726248837611521
@@ -170,24 +167,18 @@ and close the connection when it terminates. This design is very debatable:
 Asynchronous development server
 ...............................
 
-django-c10k-demo adapts Django's built-in developement server to run on top of
-Tulip, taking advantage of Tulip's built-in WSGI support.
+django-c10k-demo takes advantage of aiohttp's WSGI support to adapt Django's
+built-in developement server to run on top of asyncio.
 
 This component can be used independently by adding the ``'c10ktools'``
-application to ``INSTALLED_APPS``. This overrides the ``django-admin.py
-runserver`` command to run on Tulip. Since the ``staticfiles`` contrib
-application also overrides ``runserver``,  ``'c10ktools'`` must appear after
-``'django.contrib.staticfiles'`` in ``INSTALLED_APPS``.  Auto-reload works.
+application to ``INSTALLED_APPS``. This monkey-patches the ``django-admin.py
+runserver`` command to run on top of the asyncio event loop.
 
 Asynchronous production server
 ..............................
 
-django-c10k-demo works with `gtulip`_::
+django-c10k-demo works with aiohttp's gunicorn worker class::
 
-  $ pip install -e git+https://github.com/fafhrd91/gtulip#egg=gtulip
-  $ pip install -e git+https://github.com/fafhrd91/httpclient#egg=httpclient
-  $ gunicorn -k gtulip.TulipWorker c10kdemo.wsgi
+  $ gunicorn -k aiohttp.worker.AsyncGunicornWorker c10kdemo.wsgi
 
 Of course, this stack is still in an alpha state; use it at your own risk!
-
-.. _gtulip: https://github.com/fafhrd91/gtulip

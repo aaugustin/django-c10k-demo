@@ -1,6 +1,6 @@
 import random
 
-import tulip
+import asyncio
 import websockets
 
 from django.core.management.base import NoArgsCommand
@@ -15,14 +15,14 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         self.count = 0
         connections = [self.test_echo() for _ in range(self.CLIENTS)]
-        tulip.get_event_loop().run_until_complete(tulip.wait(connections))
+        asyncio.get_event_loop().run_until_complete(asyncio.wait(connections))
         assert self.count == 0
 
-    @tulip.coroutine
+    @asyncio.coroutine
     def test_echo(self):
 
         # Distribute the connections a bit
-        yield from tulip.sleep(2 * self.DELAY * random.random())
+        yield from asyncio.sleep(2 * self.DELAY * random.random())
         ws = yield from websockets.connect(self.ECHO_URL)
 
         self.count += 1
@@ -33,13 +33,13 @@ class Command(NoArgsCommand):
 
         messages = []
         messages.append((yield from ws.recv()))
-        yield from tulip.sleep(self.DELAY)
+        yield from asyncio.sleep(self.DELAY)
         ws.send('Spam?')
         messages.append((yield from ws.recv()))
-        yield from tulip.sleep(self.DELAY)
+        yield from asyncio.sleep(self.DELAY)
         ws.send('Eggs!')
         messages.append((yield from ws.recv()))
-        yield from tulip.sleep(self.DELAY)
+        yield from asyncio.sleep(self.DELAY)
         ws.send('Python.')
         messages.append((yield from ws.recv()))
         messages.append((yield from ws.recv()))

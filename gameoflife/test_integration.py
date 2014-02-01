@@ -1,4 +1,4 @@
-import tulip
+import asyncio
 
 from django.core.management import call_command
 from django.core.urlresolvers import reverse
@@ -17,7 +17,7 @@ class IntegrationTests(SeleniumTestCase):
 
     def test_gameoflife(self):
         # Reduce size before opening the browser so it gets the right size.
-        tulip.get_event_loop().run_until_complete(client.reset(5))
+        asyncio.get_event_loop().run_until_complete(client.reset(5))
 
         # This is just for the eye candy.
         self.selenium.get(self.live_server_url + reverse('gameoflife.views.watch'))

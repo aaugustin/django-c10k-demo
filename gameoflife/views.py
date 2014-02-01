@@ -1,6 +1,6 @@
 import itertools
 
-import tulip
+import asyncio
 
 from django.conf import settings
 from django.shortcuts import render
@@ -37,8 +37,8 @@ def reset(ws):
     expected = size * size
     connected = 0
     subscribed = 0
-    sub_latch = tulip.Future()
-    run_latch = tulip.Future()
+    sub_latch = asyncio.Future()
+    run_latch = asyncio.Future()
     subscribers = [[set() for col in range(size)] for row in range(size)]
 
 

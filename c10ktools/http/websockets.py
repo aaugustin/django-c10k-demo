@@ -1,6 +1,7 @@
+import asyncio
 import functools
 
-import tulip
+import aiohttp.parsers
 import websockets
 from websockets import handshake
 
@@ -15,11 +16,11 @@ def websocket(handler):
         environ = request.META
         try:
             assert environ['wsgi.async']
-            stream = environ['tulip.reader']
-            transport = environ['tulip.writer']
-            assert isinstance(stream, tulip.parsers.StreamBuffer)
-            assert isinstance(transport, tulip.Transport)
-            # All Tulip transports appear to have a _protocol attribute...
+            stream = environ['async.reader']
+            transport = environ['async.writer']
+            assert isinstance(stream, aiohttp.parsers.StreamParser)
+            assert isinstance(transport, asyncio.Transport)
+            # All asyncio transports appear to have a _protocol attribute...
             http_proto = transport._protocol
             # ... I still feel guilty about this.
             assert http_proto.stream is stream
@@ -27,19 +28,19 @@ def websocket(handler):
         except (AssertionError, KeyError) as e:             # pragma: no cover
             return HttpResponseServerError("Unsupported WSGI server: %s." % e)
 
-        @tulip.coroutine
+        @asyncio.coroutine
         def run_ws_handler(ws):
             yield from handler(ws, *args, **kwargs)
             yield from ws.close()
 
         def switch_protocols():
             ws_proto = websockets.WebSocketCommonProtocol()
-            # Disconnect transport from http_proto and connect it to ws_proto
+            # Disconnect transport from http_proto and connect it to ws_proto.
             http_proto.transport = DummyTransport()
             transport._protocol = ws_proto
             ws_proto.connection_made(transport)
-            # Run the WebSocket handler in a Tulip Task
-            tulip.Task(run_ws_handler(ws_proto))
+            # Run the WebSocket handler in an asyncio Task.
+            asyncio.Task(run_ws_handler(ws_proto))
 
         return WebSocketResponse(environ, switch_protocols)
 
@@ -68,7 +69,7 @@ class WebSocketResponse(HttpResponse):
             self.close = switch_protocols
 
 
-class DummyTransport(tulip.Transport):
+class DummyTransport(asyncio.Transport):
     """Transport that doesn't do anything, but can be closed silently."""
 
     def can_write_eof(self):
