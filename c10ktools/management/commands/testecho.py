@@ -34,13 +34,13 @@ class Command(NoArgsCommand):
         messages = []
         messages.append((yield from ws.recv()))
         yield from asyncio.sleep(self.DELAY)
-        ws.send('Spam?')
+        yield from ws.send('Spam?')
         messages.append((yield from ws.recv()))
         yield from asyncio.sleep(self.DELAY)
-        ws.send('Eggs!')
+        yield from ws.send('Eggs!')
         messages.append((yield from ws.recv()))
         yield from asyncio.sleep(self.DELAY)
-        ws.send('Python.')
+        yield from ws.send('Python.')
         messages.append((yield from ws.recv()))
         messages.append((yield from ws.recv()))
         assert messages == [

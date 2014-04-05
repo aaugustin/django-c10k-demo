@@ -120,7 +120,7 @@ Here's an example of a WebSocket echo server in Django::
 
     @websocket
     def handler(ws):
-        ws.send((yield from ws.recv()))
+        yield from ws.send((yield from ws.recv()))
 
 WebSocket handlers are hooked in the URLconf like regular HTTP views.
 Arguments can be captured in the URLconf and passed to the handlers.
@@ -129,9 +129,9 @@ This doesn't allow sharing an URL between a regular HTTP view and a WebSocket
 handler, but I'm happy with this limitation as it's probably a good practice
 to keep them separate anyway.
 
-Inside a WebSocket handler, you can use ``yield from ws.recv()`` and
-``ws.send()`` freely. You can also call ``ws.send()`` from outside the
-handler.
+Inside a WebSocket handler, you can use ``yield from ws.recv()`` and ``yield
+from ws.send()`` freely. You can also call ``yield from ws.send()`` outside
+the handler.
 
 The ``@websocket`` decorator should only be applied to coroutines. It takes
 care of closing the WebSocket connection when the handler terminates.

@@ -8,7 +8,7 @@ BASE_URL = 'ws://localhost:8000'
 @asyncio.coroutine
 def reset(size):
     ws = yield from websockets.connect(BASE_URL + '/reset/')
-    ws.send(str(size))
+    yield from ws.send(str(size))
     yield from ws.worker
 
 
@@ -33,15 +33,15 @@ def run(row, col, size, wrap, speed, steps=None, state=None):
 
     # Subscribe to updates sent by neighbors.
     for neighbor in neighbors:
-        ws.send('{} {}'.format(*neighbor))
-    ws.send('sub')
+        yield from ws.send('{} {}'.format(*neighbor))
+    yield from ws.send('sub')
 
     # Wait until all clients are subscribed.
     msg = yield from ws.recv()
     if msg != 'run':
         raise Exception("Unexpected message: {}".format(msg))
 
-    ws.send('{} {} {} {}'.format(0, row, col, int(state)))
+    yield from ws.send('{} {} {} {}'.format(0, row, col, int(state)))
 
     # This is the step for which we last sent our state, and for which we're
     # collecting the states of our neighbors.
@@ -67,7 +67,7 @@ def run(row, col, size, wrap, speed, steps=None, state=None):
             alive = states[target].count(True)
             state = alive == 3 or (state and alive == 2)
             states[target] = [None] * n
-            ws.send('{} {} {} {}'.format(step, row, col, int(state)))
+            yield from ws.send('{} {} {} {}'.format(step, row, col, int(state)))
             # Throttle, speed is a number of steps per second
             yield from asyncio.sleep(1 / speed)
 

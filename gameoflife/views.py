@@ -55,7 +55,7 @@ def worker(ws):
     elif connected % 100 == 0:
         debug("{:5} workers connected".format(connected))
     yield from sub_latch
-    ws.send('sub')
+    yield from ws.send('sub')
 
     # Subscribe to updates sent by neighbors.
     subscriptions = set()
@@ -77,7 +77,7 @@ def worker(ws):
     elif subscribed % 100 == 0:
         debug("{:5} workers subscribed".format(subscribed))
     yield from run_latch
-    ws.send('run')
+    yield from ws.send('run')
 
     # Relay state updates to subscribers.
     while True:
@@ -88,7 +88,7 @@ def worker(ws):
         for subscriber in itertools.chain(
                 subscribers[int(row)][int(col)], global_subscribers):
             if subscriber.open:
-                subscriber.send(msg)
+                yield from subscriber.send(msg)
 
     # Unsubscribe from updates.
     for row, col in subscriptions:
