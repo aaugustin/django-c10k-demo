@@ -22,19 +22,19 @@ Running the code
 Prerequisites
 .............
 
-* Install `Python 3.3`_.
-* Install aiohttp_, asyncio_, Django_, and websockets_, most likely with
-  ``virtualenv`` and ``pip``.
+* Install `Python`_ 3.4 or 3.3.
+* Install aiohttp_, Django_, and websockets_, most likely with
+  ``virtualenv`` and ``pip``. If you're using Python 3.3, install asyncio_.
 * Clone `this repository`_.
 * Configure your OS to allow lots of file descriptors.
   On OS X: ``sudo sysctl -w kern.maxfiles=40960 kern.maxfilesperproc=20480``
 * Open two shells and bump their file descriptor limit: ``ulimit -n 10240``
 
-.. _Python 3.3: http://www.python.org/getit/
+.. _Python: http://www.python.org/getit/
 .. _aiohttp: https://pypi.python.org/pypi/aiohttp
-.. _asyncio: https://pypi.python.org/pypi/asyncio
 .. _Django: https://www.djangoproject.com/download/
 .. _websockets: https://pypi.python.org/pypi/websockets
+.. _asyncio: https://pypi.python.org/pypi/asyncio
 .. _this repository: https://github.com/aaugustin/django-c10k-demo
 
 Game of Life demo
