@@ -1,7 +1,6 @@
 import asyncio
 import functools
 
-import aiohttp.parsers
 import websockets
 from websockets import handshake
 
@@ -16,16 +15,26 @@ def websocket(handler):
         environ = request.META
         try:
             assert environ['wsgi.async']
-            stream = environ['async.reader']
-            transport = environ['async.writer']
-            assert isinstance(stream, aiohttp.parsers.StreamParser)
-            assert isinstance(transport, asyncio.Transport)
-            # All asyncio transports appear to have a _protocol attribute...
-            http_proto = transport._protocol
-            # ... I still feel guilty about this.
-            assert http_proto.stream is stream
-            assert http_proto.transport is transport
+            reader = environ['async.reader']
+            writer = environ['async.writer']
+
+            # When the following assertions fail, insert an `import pdb;
+            # pdb.set_trace()` here and look for internal changes in aiohttp.
+            assert isinstance(reader, asyncio.streams.StreamReader)
+            assert isinstance(writer, asyncio.streams.StreamWriter)
+
+            # Extract the actual protocol and transport.
+            http_protocol = writer._protocol
+            transport = http_protocol.transport
+
+            assert http_protocol.reader is reader
+            assert http_protocol.writer is writer
+            assert reader._transport is transport
+            assert writer._transport is transport
+            assert transport._protocol is http_protocol
+
         except (AssertionError, KeyError) as e:             # pragma: no cover
+            # When the handshake fails (500), insert a `raise` here.
             return HttpResponseServerError("Unsupported WSGI server: %s." % e)
 
         @asyncio.coroutine
@@ -34,13 +43,16 @@ def websocket(handler):
             yield from ws.close()
 
         def switch_protocols():
-            ws_proto = websockets.WebSocketCommonProtocol()
-            # Disconnect transport from http_proto and connect it to ws_proto.
-            http_proto.transport = DummyTransport()
-            transport._protocol = ws_proto
-            ws_proto.connection_made(transport)
-            # Run the WebSocket handler in an asyncio Task.
-            asyncio.Task(run_ws_handler(ws_proto))
+            # Switch transport from http_protocol to ws_protocol (YOLO).
+            ws_protocol = websockets.WebSocketCommonProtocol()
+            transport._protocol = ws_protocol
+            ws_protocol.connection_made(transport)
+
+            # Ensure aiohttp doesn't interfere.
+            http_protocol.transport = None
+
+            # Fire'n'forget the WebSocket handler.
+            asyncio.async(run_ws_handler(ws_protocol))
 
         return WebSocketResponse(environ, switch_protocols)
 
@@ -66,14 +78,6 @@ class WebSocketResponse(HttpResponse):
             self._headers = {}                  # Reset headers (private API!)
             set_header = self.__setitem__
             handshake.build_response(set_header, key)
+
+            # Here be dragons.
             self.close = switch_protocols
-
-
-class DummyTransport(asyncio.Transport):
-    """Transport that doesn't do anything, but can be closed silently."""
-
-    def can_write_eof(self):
-        return False
-
-    def close(self):
-        pass

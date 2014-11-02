@@ -8,7 +8,7 @@ It was originally written to handle 10 000 concurrent real-time connections to
 Django, hence the name.
 
 It combines several interesting concepts: the `C10k problem`_, the `WebSocket
-protocol`_, the `Django web framework`_, and Python's upcoming `asynchronous
+protocol`_, the `Django web framework`_, and Python's built-in `asynchronous
 IO support`_.
 
 .. _C10k problem: http://en.wikipedia.org/wiki/C10k_problem
