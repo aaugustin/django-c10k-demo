@@ -159,7 +159,7 @@ and close the connection when it terminates. This design is very debatable:
 
 - This isn't an intended use case for the ``close()`` method.
 - The protocol transplant relies on non-standard variables in ``environ``.
-- It also abuses private APIs of asyncio.
+- It abuses private APIs of asyncio and of aiohttp which aren't quite stable.
 
 .. _sorry: https://twitter.com/GrahamDumpleton/status/316315348049752064
 .. _Graham: https://twitter.com/GrahamDumpleton/status/316726248837611521
@@ -171,7 +171,7 @@ django-c10k-demo takes advantage of aiohttp's WSGI support to adapt Django's
 built-in developement server to run on top of asyncio.
 
 This component can be used independently by adding the ``'c10ktools'``
-application to ``INSTALLED_APPS``. This monkey-patches the ``django-admin.py
+application to ``INSTALLED_APPS``. It monkey-patches the ``django-admin.py
 runserver`` command to run on top of the asyncio event loop.
 
 Asynchronous production server
@@ -181,4 +181,5 @@ django-c10k-demo works with aiohttp's gunicorn worker class::
 
   $ gunicorn -k aiohttp.worker.AsyncGunicornWorker c10kdemo.wsgi
 
-Of course, this stack is still in an alpha state; use it at your own risk!
+Of course, this stack is experimental. It's unlikely to ever become
+"production-ready". Use it at your own risk!
