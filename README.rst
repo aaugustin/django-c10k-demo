@@ -1,6 +1,9 @@
 README
 ======
 
+**This experiment depends on internals of ``aiohttp`` which tend to change
+often and increase in complexity. It isn't maintained any longer.**
+
 django-c10k-demo is an experimental playground for high concurrency in Django
 with WebSockets.
 
